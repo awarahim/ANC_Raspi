@@ -8,6 +8,7 @@ import pyaudio
 import math
 import time
 import wave
+from datetime import datetime
  
 class ToneGenerator(object):
  
@@ -180,14 +181,14 @@ Non-blocking mode (start and stop recording):
       
 #### own usage ####
 
-def beep(frequency=440, duration=5, amplitude=0.5):
+def beep(fname,frequency=440, duration=5, amplitude=0.5):
     
     generator = ToneGenerator()
     generator.play(frequency,duration,amplitude)
     
     while generator.is_playing():
           data = Recorder(input_device_index=2)
-          with data.open('beep_test_1.wav','wb') as recfile:
+          with data.open(fname,'wb') as recfile:
                recfile.start_recording()
                time.sleep(duration)
                recfile.stop_recording()
@@ -196,6 +197,7 @@ def beep(frequency=440, duration=5, amplitude=0.5):
     
 
 if __name__ == '__main__':
-   beep(duration=10)
+   FILENAME = datetime.now().strftime("%b_%d_%H;%M;%S_beep_test.wav")
+   beep(FILENAME, duration=10)
    
 
