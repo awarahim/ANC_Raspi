@@ -7,7 +7,7 @@ import numpy
 import pyaudio
 import math
 import time
- 
+import wave
  
 class ToneGenerator(object):
  
@@ -84,53 +84,101 @@ class ToneGenerator(object):
 #     while generator.is_playing():
 #         pass                # Do something useful in here (e.g. recording)
 
-#### own usage ####
-def record(duration=60):
-    
-    # Constants for audio devices
-    FORMAT  = pyaudio.paInt16    # 24-bit the mic is 24-bit with sample rate of 96kHz
-    CHANNELS = 1                 # number of audio streams to use. Since there is one speaker and one mic, use 2 streams
-    RATE = 44100               # 44kHz
-    FRAMES_PER_BUFFER = 1024    # 
-    
-    p = pyaudio.PyAudio()
-    
-    data = [] #place holder for data output
-    data.append([])
-    data.append([])
-    def callback(in_data, frame_count, time_info, status):
-            fromType = numpy.int16
-            dfloat = numpy.frombuffer(in_data,fromType).astype(numpy.float) # convert integer to float values
-            data_np = numpy.array(dfloat) # convert float data into numpy array
-            data_fft = numpy.fft.fft(data_np) # transform into freq domain
-            data[0].append(in_data)
-            data[1].append(data_fft)
-            
-            return in_data, pyaudio.paContinue
-
+class Recorder(object):
+      def __init__(self, channels=1,rate=44100,frames_per_buffer=1024,input_device_index=2):
+          self.channels = channels
+          self.rate = rate
+          self.frames_per_buffer = frames_per_buffer
+          self.input_device_index = input_device_index
+       
+      def open(self, fname, mode='wb'):
+          return RecordingFile(fname,mode,self.channels,self.rate,self.frames_per_buffer,self.input_device_index)
+       
+class RecordingFile(object):
+      def __init__(self,fname,mode,channels,rate,frames_per_buffer,input_device_index):
+          self.fname = fname
+          self.mode = mode
+          self.channels = channels
+          self.rate = rate
+          self.frames_per_buffer = frames_per_buffer
+          self.input_device_index = input_device_index
+          self._pa = pyaudio.PyAudio()
+          self.wavefile = self._prepare_file(self.fname, self.mode)
+          self._stream = None
+      
+      def __enter__(self):
+          return self
+       
+      def __exit__(self,exception,value,traceback):
+          self.close()
+      
+      # Blocking mode
+      def record(self, duration):
+          self._stream = self._pa.open(format=pyaudio.paInt16,
+                                       channels = self.channels,
+                                       rate = self.rate,
+                                       input = True,
+                                       frames_per_buffer = self.frames_per_buffer,
+                                       input_device_index= self.input_device_index)
+          for _ in range(int(self.rate / self.frames_per_buffer * duration)):
+              audio = self._stream.read(self.frames_per_buffer)
+              self.wavefile.writeframes(audio)
+          return None
+         
+      # Callback mode
+      def start_recording(self):
+          self._stream = self._pa.open(format=pyaudio.paInt16,
+                                       channels = self.channels,
+                                       rate = self.rate,
+                                       input = True,
+                                       frames_per_buffer = self.frames_per_buffer,
+                                       input_device_index= self.input_device_index,
+                                       stream_callback=self.get_callback())
+          self._stream.start_stream()
+          return self
         
-    stream = p.open(
-        format=FORMAT,
-        channels=CHANNELS,
-        rate=RATE,
-        frames_per_buffer=FRAMES_PER_BUFFER,
-        input=True,
-        input_device_index=2,
-        stream_callback = callback)
-    
-   
-    # start stream
-    stream.start_stream()
+      def stop_recording(self):
+          self._stream.stop_stream()
+          return self
+  
+      def get_callback(self):
+          def callback(in_data,frame_count,time_info,status):
+              self.wavefile.writeframes(in_data)
+              return in_data, pyaudio.paContinue
+          return callback
+       
+      def close(self):
+          self._stream.close()
+          self._pa.terminate()
+          self.wavefile.close()
+          
+      def _prepare_file(self, fname,mode='wb'):
+          wavefile = wave.open(fname,mode)
+          wavefile.setnchannels(self.channels)
+          wavefile.setsampwidth(self._pa.get_sample_size(pyaudio,paInt16))
+          wavefile.setframerate(self.rate)
+          return wavefile  
 
-    # control how long the stream to record
-    time.sleep(duration) # in seconds
-
-    # stop stream
-    stream.stop_stream()   
-    
-    stream.close()
-    
-    return data
+     # def save_fft_data(self):
+          
+############################ Usage Example ##########################      
+"""
+Provides WAV recording functionality via two approaches:
+Blocking mode (record for a set duration):
+>>> rec = Recorder(channels=2)
+>>> with rec.open('blocking.wav','wb') as recfile:
+         recfile.record(duration=5.0)
+Non-blocking mode (start and stop recording):
+>>> rec = Recorder(channels=2)
+>>> with rec.open('nonblocking.wav','wb') as recfile2:
+         recfile2.start_recording()
+         time.sleep(5.0)
+         recfile2.stop_recording()
+"""         
+      
+      
+      
+#### own usage ####
 
 def beep(frequency=440, duration=5, amplitude=0.5):
     
@@ -138,20 +186,16 @@ def beep(frequency=440, duration=5, amplitude=0.5):
     generator.play(frequency,duration,amplitude)
     
     while generator.is_playing():
-        data = record(5)
+          data = Recorder(input_device_index=2)
+          with data.open('beep_test_1.wav','wb') as recfile:
+               recfile.start_recording()
+               time.sleep(duration)
+               recfile.stop_recording()
         
-    return data
+
     
-    
-    
-    
-    
-import csv
 
 if __name__ == '__main__':
-   result = beep(440,5,0.5)
-   with open('Beep_test_1.csv','w') as file:
-       write = csv.write(file)
-       
-   file.write(str(result))
+   beep(duration=10)
+   
 
