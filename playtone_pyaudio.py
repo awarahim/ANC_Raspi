@@ -210,8 +210,8 @@ def ref(fname,duration=10):
 
 if __name__ == '__main__':
    FILENAME = datetime.now().strftime("%b_%d_%H;%M;%S_beep_test.wav")
-   p1 = mp.Process(target=beep)
-   p2 = mp.Process(target=ref, args=(FILENAME,10))
+   p2 = mp.Process(target=beep)
+   p1 = mp.Process(target=ref, args=(FILENAME,10))
    
    p1.start()
    p1.join()
