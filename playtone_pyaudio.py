@@ -214,9 +214,9 @@ if __name__ == '__main__':
    p2 = mp.Process(target=ref, args=(FILENAME,10))
    
    p1.start()
-   p2.start()
-   
    p1.join()
+   
+   p2.start()
    p2.join()
    
    
