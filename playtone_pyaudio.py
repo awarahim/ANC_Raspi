@@ -6,7 +6,7 @@
 Purpose: play 440Hz tone on internal speaker and record using error mic
 
 """
-import multiprocessing
+import multiprocessing as mp
 import numpy 
 import pyaudio
 import math
@@ -92,7 +92,7 @@ class ToneGenerator(object):
 #         pass                # Do something useful in here (e.g. recording)
 
 class Recorder(object):
-      def __init__(self, channels=1,rate=44100,frames_per_buffer=1024,input_device_index=1):
+      def __init__(self, channels=1,rate=44100,frames_per_buffer=4410,input_device_index=1):
           self.channels = channels
           self.rate = rate
           self.frames_per_buffer = frames_per_buffer
@@ -187,18 +187,18 @@ Non-blocking mode (start and stop recording):
       
 #### own usage ############################################################
 
-def beep(output_device_index=0, frequency=440, duration=5, amplitude=0.5):
-    print(FILENAME, output_device_index, frequency, duration, amplitude)
+def beep(output_device_index=0, frequency=440, duration=10, amplitude=0.5):
+    print(output_device_index, frequency, duration, amplitude)
     
     generator = ToneGenerator()
     generator.play(frequency,duration,amplitude)
     
 def ref(fname,duration=10):
-          data = Recorder()
-          with data.open(fname,'wb') as recfile:
-               recfile.start_recording()
-               time.sleep(duration)
-               recfile.stop_recording()
+    data = Recorder()
+    with data.open(fname,'wb') as recfile:
+         recfile.start_recording()
+         time.sleep(duration)
+         recfile.stop_recording()
   
 
 if __name__ == '__main__':
