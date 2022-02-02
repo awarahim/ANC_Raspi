@@ -181,12 +181,12 @@ Non-blocking mode (start and stop recording):
       
 #### own usage ####
 
-def beep(frequency=440, duration=5, amplitude=0.5):
+def beep(frequency=440, duration=10, amplitude=0.5):
     
     generator = ToneGenerator()
     generator.play(frequency,duration,amplitude)
     
-def rec(fname):
+def rec(fname, duration=10):
     data = Recorder(input_device_index=2)
     with data.open(fname,'wb') as recfile:
          recfile.start_recording()
