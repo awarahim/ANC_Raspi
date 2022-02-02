@@ -20,8 +20,15 @@ class ToneGenerator(object):
         self.p = pyaudio.PyAudio()
         self.samplerate = samplerate
         self.frames_per_buffer = frames_per_buffer
+        self.stream = None
         self.streamOpen = False
         self.output_device_index = output_device_index
+        
+    def __enter__(self):
+        return self
+       
+    def __exit__(self,exception,value,traceback):
+        self.close()
  
     def sinewave(self):
         if self.buffer_offset + self.frames_per_buffer - 1 > self.x_max:
