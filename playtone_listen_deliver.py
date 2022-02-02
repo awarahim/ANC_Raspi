@@ -16,7 +16,7 @@ def ref_mic(p, q1, stop_event):
     
     def callback(in_data, frame_count, time_info, status):
 #             data = rms(in_data)
-            q1.put(data)
+            q1.put(in_data)
 #             print("q1:", q1.get())
             return in_data, pyaudio.paContinue
         
@@ -35,8 +35,6 @@ def ref_mic(p, q1, stop_event):
 
     # stop stream
     stream2.stop_stream()
-
-    
     stream2.close()
 
 
@@ -46,9 +44,10 @@ if __name__ == '__main__':
     # ctrl-c
     signal.signal(signal.SIGINT, stop)
     
+    p = pyaudio.PyAudio()
     q1 = mp.Queue()
     
-    p1 = mp.Process(target=ref_mic)
+    p1 = mp.Process(target=ref_mic, arg=(q1,))
     p1.start()
     p1.join()
     p1.terminate()
