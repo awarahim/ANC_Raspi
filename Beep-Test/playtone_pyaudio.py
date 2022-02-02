@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 
 #refer: https://markhedleyjones.com/projects/python-tone-generator
-
+import multiprocessing as mp
 import numpy 
 import pyaudio
 import math
@@ -181,23 +181,30 @@ Non-blocking mode (start and stop recording):
       
 #### own usage ####
 
-def beep(fname,frequency=440, duration=5, amplitude=0.5):
+def beep(frequency=440, duration=5, amplitude=0.5):
     
     generator = ToneGenerator()
     generator.play(frequency,duration,amplitude)
     
-    while generator.is_playing():
-          data = Recorder(input_device_index=2)
-          with data.open(fname,'wb') as recfile:
-               recfile.start_recording()
-               time.sleep(duration)
-               recfile.stop_recording()
+def rec(fname):
+    data = Recorder(input_device_index=2)
+    with data.open(fname,'wb') as recfile:
+         recfile.start_recording()
+         time.sleep(duration)
+         recfile.stop_recording()
         
 
     
 
 if __name__ == '__main__':
    FILENAME = datetime.now().strftime("%b_%d_%H;%M;%S_beep_test.wav")
-   beep(FILENAME, duration=10)
    
+   p1 = mp.Process(target=beep, args=(440,10,0.5))
+   p2 = mp.Process(target=rec, args=(FILENAME,))
+   
+   p1.start()
+   p2.start()
+   
+   p1.join()
+   p2.join()
 
