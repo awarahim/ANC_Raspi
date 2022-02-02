@@ -6,7 +6,7 @@
 Purpose: play 440Hz tone on internal speaker and record using error mic
 
 """
-
+import multiprocessing
 import numpy 
 import pyaudio
 import math
@@ -185,35 +185,32 @@ Non-blocking mode (start and stop recording):
       
       
       
-#### own usage ####
+#### own usage ############################################################
 
-def beep(fname, input_device_index=1, output_device_index=0, frequency=440, duration=5, amplitude=0.5):
-    print(FILENAME, input_device_index, output_device_index, frequency, duration, amplitude)
+def beep(output_device_index=0, frequency=440, duration=5, amplitude=0.5):
+    print(FILENAME, output_device_index, frequency, duration, amplitude)
     
     generator = ToneGenerator()
     generator.play(frequency,duration,amplitude)
     
-    while generator.is_playing():
-          data = Recorder(input_device_index)
+def ref(fname,duration=10):
+          data = Recorder()
           with data.open(fname,'wb') as recfile:
                recfile.start_recording()
                time.sleep(duration)
                recfile.stop_recording()
-               
-    # generator starts playing and then the mic record. Debugging showed that the recfile start recording as soon as
-    # generator plays and finish recording later than the generator is stop playing. The .wav file didn't produce any sound
-    # as I play using VLC on Raspi. Why? Uploaded to the drive and trying to listen to the recording on a different device.
-    # result: the volume were too low when playing. The sound was actually recorded. For Jan 28th data, the input_device_index
-    # was wrong. Hence, no sound is recorded.
-    
-    
-        
-
-    
+  
 
 if __name__ == '__main__':
    FILENAME = datetime.now().strftime("%b_%d_%H;%M;%S_beep_test.wav")
-   beep(FILENAME, input_device_index=1, output_device_index=0, frequency=440, duration=10, amplitude=0.1)
+   p1 = mp.Process(target=beep)
+   p2 = mp.Process(target=ref, args=(FILENAME,10))
+   
+   p1.start()
+   p2.start()
+   
+   p1.join()
+   p2.join()
    
    
    # NOTE:
