@@ -6,7 +6,7 @@
 Purpose: play 440Hz tone on internal speaker and record using error mic
 
 """
-
+import multiprocessing as mp
 import numpy 
 import pyaudio
 import math
@@ -14,85 +14,11 @@ import time
 import wave
 from datetime import datetime
  
-class ToneGenerator(object):
  
-    def __init__(self, samplerate=44100, frames_per_buffer=4410, output_device_index=0):
-        self.p = pyaudio.PyAudio()
-        self.samplerate = samplerate
-        self.frames_per_buffer = frames_per_buffer
-        self.streamOpen = False
-        self.output_device_index = output_device_index
- 
-    def sinewave(self):
-        if self.buffer_offset + self.frames_per_buffer - 1 > self.x_max:
-            # We don't need a full buffer or audio so pad the end with 0's
-            xs = numpy.arange(self.buffer_offset,
-                              self.x_max)
-            tmp = self.amplitude * numpy.sin(xs * self.omega)
-            out = numpy.append(tmp,
-                               numpy.zeros(self.frames_per_buffer - len(tmp)))
-        else:
-            xs = numpy.arange(self.buffer_offset,
-                              self.buffer_offset + self.frames_per_buffer)
-            out = self.amplitude * numpy.sin(xs * self.omega)
-        self.buffer_offset += self.frames_per_buffer
-        return out
- 
-    def callback(self, in_data, frame_count, time_info, status):
-        if self.buffer_offset < self.x_max:
-            data = self.sinewave().astype(numpy.float32)
-            return (data.tostring(), pyaudio.paContinue)
-        else:
-            return (None, pyaudio.paComplete)
- 
-    def is_playing(self):
-        if self.stream.is_active():
-            return True
-        else:
-            if self.streamOpen:
-                self.stream.stop_stream()
-                self.stream.close()
-                self.streamOpen = False
-            return False
- 
-    def play(self, frequency, duration, amplitude):
-        self.omega = float(frequency) * (math.pi * 2) / self.samplerate
-        self.amplitude = amplitude
-        self.buffer_offset = 0
-        self.streamOpen = True
-        self.x_max = math.ceil(self.samplerate * duration) - 1
-        self.stream = self.p.open(format=pyaudio.paFloat32,
-                                  channels=1,
-                                  rate=self.samplerate,
-                                  output=True,
-                                  frames_per_buffer=self.frames_per_buffer,
-                                  output_device_index = self.output_device_index,
-                                  stream_callback=self.callback)
- 
- 
-###############################################################################
-#                                 Usage Example                               #
-###############################################################################
- 
-# generator = ToneGenerator()
- 
-# frequency_start = 50        # Frequency to start the sweep from
-# frequency_end = 10000       # Frequency to end the sweep at
-# num_frequencies = 200       # Number of frequencies in the sweep
-# amplitude = 0.50            # Amplitude of the waveform
-# step_duration = 0.43        # Time (seconds) to play at each step
- 
-# for frequency in numpy.logspace(math.log(frequency_start, 10),
-#                                 math.log(frequency_end, 10),
-#                                 num_frequencies):
- 
-#     print("Playing tone at {0:0.2f} Hz".format(frequency))
-#     generator.play(frequency, step_duration, amplitude)
-#     while generator.is_playing():
-#         pass                # Do something useful in here (e.g. recording)
-
 class Recorder(object):
-      def __init__(self, channels=1,rate=44100,frames_per_buffer=1024,input_device_index=1):
+      def __init__(self, channels=1,rate=44100,frames_per_buffer=4410,input_device_index=1):
+          # with monitor, input_device_index=2, without monitor = 1
+          
           self.channels = channels
           self.rate = rate
           self.frames_per_buffer = frames_per_buffer
@@ -185,35 +111,72 @@ Non-blocking mode (start and stop recording):
       
       
       
-#### own usage ####
+#### own usage ############################################################
 
-def beep(fname, input_device_index=1, output_device_index=0, frequency=440, duration=5, amplitude=0.5):
-    print(FILENAME, input_device_index, output_device_index, frequency, duration, amplitude)
+# NONBLOCKING MODE    
+def beep():
     
-    generator = ToneGenerator()
-    generator.play(frequency,duration,amplitude)
-    
-    while generator.is_playing():
-          data = Recorder(input_device_index)
-          with data.open(fname,'wb') as recfile:
-               recfile.start_recording()
-               time.sleep(duration)
-               recfile.stop_recording()
-               
-    # generator starts playing and then the mic record. Debugging showed that the recfile start recording as soon as
-    # generator plays and finish recording later than the generator is stop playing. The .wav file didn't produce any sound
-    # as I play using VLC on Raspi. Why? Uploaded to the drive and trying to listen to the recording on a different device.
-    # result: the volume were too low when playing. The sound was actually recorded. For Jan 28th data, the input_device_index
-    # was wrong. Hence, no sound is recorded.
-    
-    
-        
+     ##### minimum needed to read a wave #############################
+     # open the file for reading.
+    wf = wave.open('440Hz_44100Hz_16bit_30sec.wav', 'rb')
+     
+    def callback_speaker(in_data, frame_count, time_info, status):
 
+         data = wf.readframes(frame_count)
+         return data, pyaudio.paContinue
+     
+     #create an audio object
+    p2 = pyaudio.PyAudio()
+     
+     # open stream based on the wave object which has been input. Output_device_index=1 with monitor, without monitor=0
+    stream3 = p2.open(format=p2.get_format_from_width(wf.getsampwidth()),
+                     channels = wf.getnchannels(),
+                     rate = wf.getframerate(),
+                     output=True,
+                     output_device_index=0,
+                     stream_callback=callback_speaker)
+#     
+#     
+     # start stream
     
+    stream3.start_stream()
+    print("speaker playing")
+     
+     # control how long the stream to play
+    time.sleep(10)
+#         
+#         # stop stream
+#         
+    stream3.stop_stream()
+#         wf.rewind()
+         
+    print('speaker stopped')    
+     # cleanup stuff
+    stream3.close()
+#     
+     # close PyAudio
+    p2.terminate()
+     
+    wf.close()
+    
+def ref(fname,duration=10):
+    data = Recorder()
+    with data.open(fname,'wb') as recfile:
+         recfile.start_recording()
+         time.sleep(duration)
+         recfile.stop_recording()
+  
 
 if __name__ == '__main__':
    FILENAME = datetime.now().strftime("%b_%d_%H;%M;%S_beep_test.wav")
-   beep(FILENAME, input_device_index=1, output_device_index=0, frequency=440, duration=10, amplitude=0.1)
+   p1 = mp.Process(target=ref, args=(FILENAME,10))
+   p2 = mp.Process(target=beep)
+   
+   p1.start()
+   p2.start()
+   
+   p1.join()
+   p2.join()
    
    
    # NOTE:
