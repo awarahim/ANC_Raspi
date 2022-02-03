@@ -8,9 +8,25 @@ import pyaudio
 import time
 import wave
 import multiprocessing as mp
+import scipy.fft as fft
 
 # Stop signal handler by Ctrl-C
 stop_event = mp.Event()
+
+## pyaudio setup ##
+FORMAT = 
+CHANNELS = 
+RATE = 
+FRAMES_PER_BUFFER = 
+#####################
+
+
+## helper code ##
+
+
+
+#####################
+
 
 def ref_mic(p, q1, stop_event):   
     
@@ -20,7 +36,7 @@ def ref_mic(p, q1, stop_event):
 #             print("q1:", q1.get())
             return in_data, pyaudio.paContinue
         
-    stream2 = p.open(
+    stream = p.open(
         format=FORMAT,
         channels=CHANNELS,
         rate=RATE,
@@ -31,12 +47,31 @@ def ref_mic(p, q1, stop_event):
     
     while not stop_event.wait(0):
         # start stream
-        stream2.start_stream()
+        stream.start_stream()
 
     # stop stream
-    stream2.stop_stream()
-    stream2.close()
-
+    stream.stop_stream()
+    stream.close()
+    
+    
+def speaker(p, q1, stop_event):
+    def callback(in_data,frame_count,time_info,status):
+        q1.get()
+        return
+    
+    stream = p.open(
+        format=FORMAT, 
+        channels=CHANNELS,
+        rate=RATE,
+        frames_per_buffer=FRAMES_PER_BUFFER,
+        output=True,
+        output_device_index=1,
+        stream_callback=callback)
+   
+    while not stop_event.wait(0):
+        stream.start_stream()
+    stream.stop_stream()
+    stream.close()
 
 
 if __name__ == '__main__':
@@ -53,3 +88,4 @@ if __name__ == '__main__':
     p1.terminate()
     
     
+#refer: https://stackoverflow.com/questions/22101023/how-to-handle-in-data-in-pyaudio-callback-mode
