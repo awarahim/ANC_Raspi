@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
 
-#refer: https://markhedleyjones.com/projects/python-tone-generator
+#refer for tone sample: https://www.mediacollege.com/audio/tone/files/440Hz_44100Hz_16bit_30sec.wav
 """
 Purpose: play 440Hz tone on internal speaker and record using error mic
 
