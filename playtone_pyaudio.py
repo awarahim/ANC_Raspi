@@ -173,6 +173,7 @@ if __name__ == '__main__':
    p2 = mp.Process(target=beep)
    
    p1.start()
+   time.sleep(1.5) # make the recording run first 1.5s then play sound 
    p2.start()
    
    p1.join()
