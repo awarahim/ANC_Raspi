@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # refer: https://stackoverflow.com/questions/23377665/python-scipy-fft-wav-files
 
-from __future__ import print_function
 import scipy.io.wavfile as wavfile
 import scipy
 import scipy.fftpack
@@ -26,11 +25,8 @@ Ts = 1.0/fs_rate # sampling interval in time
 print("Timestep between samples Ts", Ts)
 t = scipy.arange(0, secs, Ts) # time vector as scipy arange field / numpy.ndarray
 
-# Finding angle of phase shift
-
+# Finding angle of signal
 FFT_complex = scipy.fft(signal)
-
-
 FFT_angle = np.angle(FFT_complex,1) # get angle in degrees (deg=1), radians deg=0
 
 
