@@ -29,12 +29,12 @@ def run_analysis(fname):
     t = scipy.arange(0, secs, Ts) # time vector as scipy arange field / numpy.ndarray
 
     # Finding angle of signal
-    FFT_complex = scipy.fft(signal)
+    FFT_complex = scipy.fft.fft(signal)
     FFT_angle = np.angle(FFT_complex,1) # get angle in degrees (deg=1), radians deg=0
 #     print(len(FFT_angle))
 
     tic = time.perf_counter()
-    FFT = abs(scipy.fft(signal)) # gives absolute value of complex number
+    FFT = abs(scipy.fft.fft(signal)) # gives absolute value of complex number
     toc = time.perf_counter()
 #     print(f"calculated for {toc - tic:0.4f} seconds")
 
