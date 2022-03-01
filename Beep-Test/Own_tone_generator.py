@@ -48,5 +48,6 @@ if __name__ == '__main__':
     p = pyaudio.PyAudio()
     # buffer_offset = 0
     play_tone(440, 1, 44100, 4410, 5000)
+    pause() # since running in console it will end when the script end. Thonny keeps the background run. so adding pause() solve this problem
     
 # NOTE: even though the duration is set to be 1, it runs longer than 1s. duration is step_duration meaning, time(in seconds) to play at each step
