@@ -68,7 +68,7 @@ class RecordingFile(object):
       def stop_recording(self):
           self._stream.stop_stream()
           return self
-  
+      
       def get_callback(self):
           def callback(in_data,frame_count,time_info,status):
               self.wavefile.writeframes(in_data)
@@ -79,6 +79,14 @@ class RecordingFile(object):
           self._stream.close()
           self._pa.terminate()
           self.wavefile.close()
+          
+      def _prepare_file(self, fname,mode='wb'):
+          wavefile = wave.open(fname,mode)
+          wavefile.setnchannels(self.channels)
+          wavefile.setsampwidth(self._pa.get_sample_size(pyaudio.paInt16))
+          print(self._pa.get_sample_size(pyaudio.paInt16))
+          wavefile.setframerate(self.rate)
+          return wavefile  
 
 
 def rec(fname,duration=10):
@@ -104,6 +112,7 @@ def sinewave(buffer_offset, x_max, omega, amplitude, frames_per_buffer):
     
 
 def play_tone(frequency, duration, samplerate, frames_per_buffer, amplitude, output_device_index=1):
+    p = pyaudio.PyAudio()
     omega = float(frequency) * (np.pi*2) / samplerate
     amplitude = amplitude
     buffer_offset = 0
@@ -144,3 +153,4 @@ if __name__ == '__main__':
    
     p1.join()
     p2.join()
+
