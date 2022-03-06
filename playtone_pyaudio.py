@@ -6,7 +6,7 @@
 Purpose: play 440Hz tone on internal speaker and record using error mic
 
 """
-
+import multiprocessing as mp
 import numpy 
 import pyaudio
 import math
@@ -92,7 +92,7 @@ class ToneGenerator(object):
 #         pass                # Do something useful in here (e.g. recording)
 
 class Recorder(object):
-      def __init__(self, channels=1,rate=44100,frames_per_buffer=1024,input_device_index=1):
+      def __init__(self, channels=1,rate=44100,frames_per_buffer=4410,input_device_index=1):
           self.channels = channels
           self.rate = rate
           self.frames_per_buffer = frames_per_buffer
@@ -187,19 +187,19 @@ Non-blocking mode (start and stop recording):
       
 #### own usage ####
 
-def beep(fname, input_device_index=1, output_device_index=0, frequency=440, duration=5, amplitude=0.5):
-    print(FILENAME, input_device_index, output_device_index, frequency, duration, amplitude)
+def beep(output_device_index=0, frequency=440, duration=5, amplitude=0.5):
+    print(output_device_index, frequency, duration, amplitude)
     
     generator = ToneGenerator()
     generator.play(frequency,duration,amplitude)
     
-    while generator.is_playing():
-          data = Recorder(input_device_index)
-          with data.open(fname,'wb') as recfile:
-               recfile.start_recording()
-               time.sleep(duration)
-               recfile.stop_recording()
-               
+def rec(fname, input_device_index=1, duration=5)
+    data = Recorder(input_device_index)
+    with data.open(fname,'wb') as recfile:
+         recfile.start_recording()
+         time.sleep(duration)
+         recfile.stop_recording()
+
     # generator starts playing and then the mic record. Debugging showed that the recfile start recording as soon as
     # generator plays and finish recording later than the generator is stop playing. The .wav file didn't produce any sound
     # as I play using VLC on Raspi. Why? Uploaded to the drive and trying to listen to the recording on a different device.
@@ -213,7 +213,19 @@ def beep(fname, input_device_index=1, output_device_index=0, frequency=440, dura
 
 if __name__ == '__main__':
    FILENAME = datetime.now().strftime("%b_%d_%H;%M;%S_beep_test.wav")
-   beep(FILENAME, input_device_index=1, output_device_index=0, frequency=440, duration=10, amplitude=0.1)
+   rec_delay = 1.5
+   
+   p1 = mp.Process(target=rec, args=(FILENAME,2,10+rec_delay)) #filename, input_device_index=2(with monitor), duration=10s
+   p2 = mp.Process(target=beep, args=(1,440,10,0.5)) #output_device_index=1(with monitor), freq=440, duration=10s, amplitude=0.5
+   
+   # starting threads are run individually
+   p1.start()
+   time.sleep(rec_delay) # letting recording function to run first
+   p2.start()
+   
+   # wait for both threads to finish
+   p1.join()
+   p2.join()
    
    
    # NOTE:
