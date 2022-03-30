@@ -47,7 +47,7 @@ def ref_mic(p, q1, stop_event):
     global RATE
     global FRAMES_PER_BUFFER
     
-    file = datetime.now().strftime('%b_%d_%H_%M_%S_LMS_test.csv')
+    
     
     f = fir_filter.FIR_filter(np.zeros(FRAMES_PER_BUFFER))
     y = np.empty(FRAMES_PER_BUFFER)
@@ -58,6 +58,7 @@ def ref_mic(p, q1, stop_event):
     
     def callback(in_data, frame_count, time_info, status):
 #         print(in_data)
+        file = datetime.now().strftime('%b_%d_%H_%M_%S_LMS_test.csv')
         fromType = np.int16
         d = np.frombuffer(in_data,fromType).astype(np.float) # convert data from buffer from int16 to float
         
@@ -72,20 +73,21 @@ def ref_mic(p, q1, stop_event):
             y[i] = output_signal
 #             print(len(y))
         
-#         pl.figure()
-#         pl.plot(y)
-#         pl.savefig('filtered_data'+str(k)+'.jpg')
-#         pl.figure()
-#         pl.plot(d)
-#         pl.savefig('raw_data' +str(k)+'.jpg')
+        pname = datetime.now().strftime('%b_%d_%H_%M_%S')
+        pl.figure()
+        pl.plot(y)
+        pl.savefig('filtered_data'+ pname +'.jpg')
+        pl.figure()
+        pl.plot(d)
+        pl.savefig('raw_data' + pname +'.jpg')
 #         q1.put(y)
 #         print(len(q1.get()))
 
-              #   save data of volume difference in csv file
-        file = open(file,'a')
-        writer = csv.writer(file)
-        writer.writerow([d,y])
-        file.close()
+        #   save data of volume difference in csv file but this code don't work
+        with open(file,'a') as fwrite:
+            writer = csv.writer(fwrite)
+            writer.writerows([d,y])
+            fwrite.close()
         
         return in_data, pyaudio.paContinue
     
